@@ -95,8 +95,12 @@ test_data = pd.read_csv(test_data_path)
 # use same processing on test data and features
 test_data['Sex'].replace(['male', 'female'],[0, 1], inplace = True) # convert gender to 0's and 1's
 test_data['Age'].replace(np.nan, 0, inplace = True) # convert age < 0 to 0
+
 test_data['Embarked'].replace(['C', 'Q', 'S'], [0, 1, 2], inplace = True) # convert ports to numerical
-test_data['Embarked'].replace(np.nan, 0, inplace = True) # impute NaNs to 0
+embarked_reshaped = test_data['Embarked'].values.reshape((test_data.shape[0], 1))
+embarked_imputed = imputer.transform(embarked_reshaped)
+test_data['Embarked'] = embarked_imputed
+
 # convert people to children (0), adults (1) and the elderly (2)
 test_data.loc[train_data.Age < 18, 'Age'] = 0 
 test_data.loc[(test_data.Age >= 18) & (test_data.Age < 55), 'Age'] = 1
