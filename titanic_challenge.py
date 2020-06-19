@@ -9,17 +9,14 @@ Created on Fri Jun 12 12:45:57 2020
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import cross_validate
-from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
 
-from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
 
 train_data_path = 'titanic/train.csv'
 test_data_path = 'titanic/test.csv'
 
-# read in and look at training data
+### read in and look at training data
 
 train_data = pd.read_csv(train_data_path)
 # print(train_data.columns)
@@ -27,65 +24,42 @@ train_data = pd.read_csv(train_data_path)
 # print(train_data.head())
 # print(train_data.shape)
 
-train_data.dropna(axis = 0, subset = ['Survived'], inplace = True)
-y = train_data.Survived
-train_data.drop(['Survived'], axis = 1, inplace = True)
+### feature engineering defined as a separate function - specific to this dataset
 
-# use only numerical and categorical columns for training the model and making predictions
+from feature_engineering import feature_eng
+X, y = feature_eng(train_data)
 
-num_cols = [col for col in train_data.columns if train_data[col].dtype in ['int64', 'float64']]
-cat_cols = [col for col in train_data.columns if train_data[col].nunique() < 10 and 
-            train_data[col].dtype == 'object']
-train_cols = num_cols + cat_cols
+### define the model
 
-X = train_data[train_cols].copy()
+model = XGBClassifier(n_estimators = 1000, learning_rate = 0.01, random_state = 1,
+                      max_depth = 20, gamma = 0.5, subsample = 0.5)
 
-
-# define pipelines for numerical and categorical data to transform into something more 
-# easy for the model to learn
-
-num_transformer = SimpleImputer(strategy = 'mean')
-cat_transformer = Pipeline(steps = [
-    ('imputer', SimpleImputer(strategy = 'most_frequent')),
-    ('encoder', OneHotEncoder(handle_unknown = 'ignore'))
-    ])
-
-# pre-processing that transforms the data depending on whether numerical or categorical
-
-preprocessor = ColumnTransformer(transformers = [
-    ('num', num_transformer, num_cols),
-    ('cat', cat_transformer, cat_cols)
-    ])
-
-# define the model
-
-model = RandomForestClassifier(n_estimators = 200, random_state = 1)
-
-# define a workflow for the data that includes pre-processing and model fitting
+### define a workflow for the data that includes pre-processing and model fitting
 
 my_pipeline = Pipeline(steps = [
-    ('preprocessing', preprocessor),
     ('model', model)
     ])
 
-# train the model using the pipeline and cross-validation method
- 
-scores = cross_validate(my_pipeline, X, y, cv = 5, scoring = 'accuracy', return_estimator = True)
-print(scores.keys())
-print("Test scores:")
+### train the model using the pipeline and cross-validation method
+  
+scores = cross_validate(my_pipeline, X, y, cv = 5, scoring = 'f1', return_estimator = True)
+print("F1 scores on validation data:")
 print(scores['test_score'])
 max_acc = np.argmax(scores['test_score'])+1  # index of maximum accuracy estimator
-print("Maximum accuracy attained by estimator number " + format(max_acc))
+print("Maximum F1 score attained by estimator number " + format(max_acc))
 
 best_model = scores['estimator'][max_acc - 1]
 
-# run the best model on test_data
+### run the best model on Kaggle test_data
 
 test_data = pd.read_csv(test_data_path)
-X_test = test_data[train_cols].copy()
+test_data_copy = test_data.copy()
+print("\nMaking predictions on test data using estimator {0}...".format(max_acc))
+X_test, y_dummy = feature_eng(test_data, verbose = False)
 predictions = best_model.predict(X_test)
 
-output = pd.DataFrame({'PassengerId': test_data.PassengerId, 'Survived': predictions})
-output.to_csv('my_submission.csv', index = False)
-print("Your submission was successfully saved!")
+### save predictions in Kaggle format to be submitted to the competition
 
+output = pd.DataFrame({'PassengerId': test_data_copy.PassengerId, 'Survived': predictions})
+output.to_csv('my_submission.csv', index = False)
+print("Your predictions were successfully saved!")
