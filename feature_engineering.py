@@ -147,10 +147,8 @@ def feature_eng(data, datatype):
 # =============================================================================
     # g = sns.countplot(x="Title", data=X)
     # plt.setp(g.get_xticklabels(), rotation=45)
-    X["Title"] = X['Title'].replace(['Don.', 'Rev.', 'Dr.', 'Mme.', 'Ms.',
-                                     'Major.', 'Lady.', 'Sir.', 'Mlle.',
-                                     'Col.', 'Capt.', 'Countess.',
-                                     'Jonkheer.'], 'Rare')
+    titles_kept = ['Mr.', 'Mrs.', 'Miss.', 'Master.']
+    X.loc[~X["Title"].isin(titles_kept), "Title"] = "Rare"
     X['Title'] = X['Title'].map({'Mr.': 0, 'Mrs.': 1, 'Miss.': 1,
                                  'Master.': 2, 'Rare': 3})
     # plot_features(X)
@@ -169,6 +167,11 @@ def feature_eng(data, datatype):
     X['Family_size'].astype(int)
     X.drop(['fsz'], axis=1, inplace=True)
     # sns.catplot(x="Family_size", y="Survived", data=X, kind='bar')
+
+# =============================================================================
+#   Dividing fare and age into categories performed much worse than leaving
+#   them as they are.
+# =============================================================================
 
 # =============================================================================
 #   Label encode categorical columns
