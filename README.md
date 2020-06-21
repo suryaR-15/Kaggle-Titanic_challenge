@@ -5,6 +5,4 @@ Titanic: Machine Learning From Disaster
 
 https://www.kaggle.com/c/titanic/overview
 
-Current model - accuracy score of 77%
-
-Improvements on the way!
+Current model using XGBoost classifier - accuracy score of 78.5%
