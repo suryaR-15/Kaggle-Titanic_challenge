@@ -6,4 +6,4 @@ https://www.kaggle.com/c/titanic/overview
 
 Current approach uses model stacking - accuracy score of 80.38%
 
-Leaderboard position 2046/25390
+Leaderboard position 2046/25390 (top 8%!)
